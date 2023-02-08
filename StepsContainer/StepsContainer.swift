@@ -1,9 +1,10 @@
 
 import SwiftUI
 
-struct StepsContainer: View{
+struct StepsContainer: View {
     
     @State private var path = NavigationPath()
+    @State private var nextHeight: CGFloat = .zero
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -11,9 +12,29 @@ struct StepsContainer: View{
                 .navigationDestination(for: ViewContainers.self) { view in
                     view.getView()
                 }
+                .safeAreaInset(edge: .bottom) {
+                    Spacer()
+                        .frame(height: nextHeight)
+                }
         }
         .safeAreaInset(edge: .bottom, alignment: .center, spacing: 10) {
             NextButton(path: $path)
+                .background {
+                    GeometryReader { proxy in
+                        Color.clear
+                            .preference(key: NextButtonHeightPreferenceKey.self, value: proxy.size.height)
+                    }
+                }
+        }
+        .onPreferenceChange(NextButtonHeightPreferenceKey.self) {
+            nextHeight = $0
+        }
+    }
+
+    private struct NextButtonHeightPreferenceKey: PreferenceKey {
+        static var defaultValue: CGFloat = .zero
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            value = nextValue()
         }
     }
 }
@@ -95,24 +116,5 @@ enum ViewContainers {
                 StepsContainer2()
             }
         }
-        .safeAreaInsetModifier()
-    }
-}
-
-#warning("It is necessary to dynamically calculate the height of the next button in order to correctly adjust the bottom inset of the list")
-struct SafeAreaInsetModifier: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                Spacer()
-                    .frame(height: 75)
-            }
-    }
-}
-
-
-extension View {
-    func safeAreaInsetModifier() -> some View {
-        self.modifier(SafeAreaInsetModifier())
     }
 }
